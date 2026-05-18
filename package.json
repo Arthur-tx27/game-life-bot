@@ -15,5 +15,8 @@
     "url": "https://github.com/Arthur-tx27/game-life-bot/issues"
   },
   "homepage": "https://github.com/Arthur-tx27/game-life-bot#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }

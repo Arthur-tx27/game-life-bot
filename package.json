@@ -15,5 +15,15 @@
     "url": "https://github.com/Arthur-tx27/game-life-bot/issues"
   },
   "homepage": "https://github.com/Arthur-tx27/game-life-bot#readme",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^25.9.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "tsx": "^4.22.2",
+    "typescript": "^6.0.3"
+  }
 }

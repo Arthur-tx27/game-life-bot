@@ -26,6 +26,7 @@ model Goal {
   title       String
   description String?
   requiredXp  Int       @map("required_xp")
+  currentXp   Int       @default(0) @map("current_xp")
   isCompleted Boolean   @default(false) @map("is_completed")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")

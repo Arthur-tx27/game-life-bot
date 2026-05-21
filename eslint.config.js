@@ -13,6 +13,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'prisma/'],
+    ignores: ['dist/', 'node_modules/', 'prisma/', 'src/generated/'],
   },
 );

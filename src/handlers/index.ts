@@ -1,1 +1,4 @@
-import './start'
+import './start';
+import './text';
+import './menu';
+import './profile';

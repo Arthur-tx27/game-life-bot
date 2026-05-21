@@ -1,4 +1,5 @@
 import { InputFile } from 'grammy';
+import { formatNumber, buildProgressBar } from '../lib/format';
 import {
   getActualAvatarPath,
   getLevel,
@@ -23,8 +24,7 @@ export function getProfileCard(
   const level = getLevel(totalXp);
   const progress = getLevelProgress(totalXp);
   const xpToNext = getXpToNextLevel(totalXp);
-  const filled = Math.floor(progress / 10);
-  const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
+  const bar = buildProgressBar(progress);
   const avatar = new InputFile(getActualAvatarPath(level));
 
   return { name, level, progress, xpToNext, bar, avatar };
@@ -39,6 +39,6 @@ export function buildProfileCaption(
     `*${card.level} lvl* ` +
     `${card.bar} ` +
     `*${card.progress}%*\n` +
-    `До следующего уровня: ${card.xpToNext} XP`;
+    `До следующего уровня: ${formatNumber(card.xpToNext)} XP`;
   return extra ? base + extra : base;
 }

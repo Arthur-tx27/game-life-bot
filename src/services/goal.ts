@@ -8,12 +8,19 @@ export async function getUserGoals(userId: number) {
   });
 }
 
+export async function findGoal(goalId: number) {
+  return prisma.goal.findUnique({
+    where: { id: goalId },
+    include: { subtasks: true },
+  });
+}
+
 export async function createGoal(data: {
   userId: number;
   title: string;
   description: string;
   requiredXp: number;
-  subtasks: { title: string; xpReward: number }[];
+  subtasks?: { title: string; xpReward: number }[];
 }) {
   return prisma.goal.create({
     data: {
@@ -21,8 +28,24 @@ export async function createGoal(data: {
       title: data.title,
       description: data.description,
       requiredXp: data.requiredXp,
-      subtasks: { create: data.subtasks },
+      ...(data.subtasks && { subtasks: { create: data.subtasks } }),
     },
     include: { subtasks: true },
   });
+}
+
+export async function addXpToGoal(goalId: number, xp: number) {
+  const goal = await prisma.goal.update({
+    where: { id: goalId },
+    data: { currentXp: { increment: xp } },
+  });
+
+  if (goal.currentXp >= goal.requiredXp && !goal.isCompleted) {
+    await prisma.goal.update({
+      where: { id: goalId },
+      data: { isCompleted: true },
+    });
+  }
+
+  return goal;
 }

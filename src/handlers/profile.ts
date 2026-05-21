@@ -1,6 +1,7 @@
 import { findOrCreateUser } from '../services/user';
 import { getUserGoals } from '../services/goal';
 import { getProfileCard, buildProfileCaption } from '../services/profile';
+import { formatGoalProgress, GOAL_XP_LINE_INDENT } from '../lib/format';
 import { mainMenuKeyboard } from './menu';
 
 export async function showProfile(ctx: any) {
@@ -24,9 +25,11 @@ export async function showProfile(ctx: any) {
     const doneGoals = goals.filter((g) => g.isCompleted);
 
     const activeLines = activeGoals.map((g) => {
-      const done = g.subtasks.filter((s) => s.isCompleted).length;
-      const total = g.subtasks.length;
-      return `\n⏳ ${g.title} — ${done}/${total}`;
+      return (
+        `\n🎯 ${g.title}\n` +
+        GOAL_XP_LINE_INDENT +
+        `${formatGoalProgress(g.currentXp, g.requiredXp)}`
+      );
     });
     const doneLines = doneGoals.map((g) => `\n✅ ${g.title}`);
     extra = '\n\n📋 **Цели**:' + activeLines.join('') + doneLines.join('');

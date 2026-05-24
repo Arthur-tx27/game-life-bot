@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Пользователь ───────────────────────────────────────────
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique @map("telegram_id")
+  username   String?
+  firstName  String?  @map("first_name")
+  totalXp    Int      @default(0) @map("total_xp")
+  createdAt  DateTime @default(now()) @map("created_at")
+  goals      Goal[]
+
+  @@map("users")
+}
+
+// ─── Цель ──────────────────────────────────────────────────
+model Goal {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  title       String
+  description String?
+  requiredXp  Int       @map("required_xp")
+  currentXp   Int       @default(0) @map("current_xp")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  user        User      @relation(fields: [userId], references: [id])
+  subtasks    Subtask[]
+
+  @@map("goals")
+}
+
+enum SUBTASK_TYPE {
+  DAILY
+  MEDIUM
+  HARD
+}
+
+// ─── Подзадача ────────────────────────────────────────────
+model Subtask {
+  id          Int           @id @default(autoincrement())
+  goalId      Int           @map("goal_id")
+  title       String
+  description String?
+  type        SUBTASK_TYPE  @default(DAILY)
+  xpReward    Int           @map("xp_reward")
+  isCompleted Boolean       @default(false) @map("is_completed")
+  completedAt DateTime?     @map("completed_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  goal        Goal          @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@map("subtasks")
+}

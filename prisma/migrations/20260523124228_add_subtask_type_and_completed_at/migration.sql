@@ -1,0 +1,6 @@
+-- CreateEnum
+CREATE TYPE "SUBTASK_TYPE" AS ENUM ('DAILY', 'MEDIUM', 'HARD');
+
+-- AlterTable
+ALTER TABLE "subtasks" ADD COLUMN     "completed_at" TIMESTAMP(3),
+ADD COLUMN     "type" "SUBTASK_TYPE" NOT NULL DEFAULT 'DAILY';

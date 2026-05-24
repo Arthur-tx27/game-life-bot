@@ -36,17 +36,25 @@ model Goal {
   @@map("goals")
 }
 
+enum SUBTASK_TYPE {
+  DAILY
+  MEDIUM
+  HARD
+}
+
 // ─── Подзадача ────────────────────────────────────────────
 model Subtask {
-  id          Int      @id @default(autoincrement())
-  goalId      Int      @map("goal_id")
+  id          Int           @id @default(autoincrement())
+  goalId      Int           @map("goal_id")
   title       String
   description String?
-  xpReward    Int      @map("xp_reward")
-  isCompleted Boolean  @default(false) @map("is_completed")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  type        SUBTASK_TYPE  @default(DAILY)
+  xpReward    Int           @map("xp_reward")
+  isCompleted Boolean       @default(false) @map("is_completed")
+  completedAt DateTime?     @map("completed_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  goal        Goal          @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@map("subtasks")
 }

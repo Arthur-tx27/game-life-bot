@@ -40,9 +40,9 @@ export async function startAddGoal(ctx: any) {
       },
     },
     {
-      prompt: 'Сколько опыта нужно набрать для завершения цели? (число):',
+      prompt: 'Сколько опыта нужно набрать для завершения цели? (число):\n *Легкая ~5000 XP*\n*Средняя ~10000 XP*\n*Сложная ~20000 XP*',
       handler: async (_chatId, text) => {
-        const xp = parseInt(text.trim(), 10);
+        const xp = parseInt(text.trim().replaceAll(" ", ""), 10);
         if (isNaN(xp) || xp <= 0) {
           bot.api.sendMessage(_chatId, 'Введите положительное число');
           return 'retry';

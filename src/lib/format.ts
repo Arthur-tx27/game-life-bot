@@ -7,7 +7,7 @@ export function formatNumber(n: number): string {
 
 export function buildProgressBar(percent: number): string {
   const filled = Math.min(10, Math.max(0, Math.floor(percent / 10)));
-  return '█'.repeat(filled) + '░'.repeat(10 - filled);
+  return '▰'.repeat(filled) + '▱'.repeat(10 - filled);
 }
 
 export function formatGoalProgress(currentXp: number, requiredXp: number): string {

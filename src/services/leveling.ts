@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const BASE_XP = 100;
+const BASE_XP = 1000;
 const SCALE = 1.5;
 
 export function getLevel(totalXp: number): number {
@@ -30,5 +30,8 @@ export function getLevelProgress(totalXp: number): number {
 export function getActualAvatarPath(level: number) {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const IMG_DIR = path.resolve(__dirname, '../../img/level-references');
+
+  if (level > 9) return path.join(IMG_DIR, `image_part_${9}.png`);
+
   return path.join(IMG_DIR, `image_part_${level}.png`);
 }

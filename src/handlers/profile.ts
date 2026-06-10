@@ -37,9 +37,15 @@ export async function showProfile(ctx: any) {
 
   const caption = buildProfileCaption(card, extra);
 
-  await ctx.replyWithPhoto(card.avatar, {
+  const msg = await ctx.replyWithPhoto(card.avatar, {
     caption,
     parse_mode: 'Markdown',
     reply_markup: mainMenuKeyboard,
   });
+
+  await ctx.api
+  .pinChatMessage(ctx.chat.id, msg.message_id, {
+    disable_notification: true,
+  })
+  .catch(() => {});
 }

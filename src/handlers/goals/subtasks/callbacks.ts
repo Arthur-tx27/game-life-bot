@@ -1,9 +1,14 @@
-import { InlineKeyboard } from 'grammy';
+import { Context, InlineKeyboard } from 'grammy';
+import { SUBTASK_TYPE } from '@prisma/client';
 import { showGoal } from '../view';
 import { toggleSubtask } from '../../../services/goal';
 import { startAddSubtask } from './add';
 
-export async function showSubtaskTypePicker(ctx: any, goalId: number) {
+function isSubtaskType(value: string): value is SUBTASK_TYPE {
+  return value in SUBTASK_TYPE;
+}
+
+export async function showSubtaskTypePicker(ctx: Context, goalId: number) {
   await ctx.answerCallbackQuery();
   const keyboard = new InlineKeyboard()
     .text('🔄 Ежедневная', `subtask_type:${goalId}:DAILY`)
@@ -16,25 +21,22 @@ export async function showSubtaskTypePicker(ctx: any, goalId: number) {
   });
 }
 
-export async function handleSubtaskType(
-  ctx: any,
-  goalId: number,
-  type: string,
-) {
-  if (!['DAILY', 'MEDIUM', 'HARD'].includes(type)) {
+export async function handleSubtaskType(ctx: Context, goalId: number, type: string) {
+  if (!isSubtaskType(type)) {
     return ctx.answerCallbackQuery('Неизвестный тип задачи');
   }
   await ctx.answerCallbackQuery();
   await ctx.deleteMessage().catch(() => {});
-  return startAddSubtask(ctx, goalId, type as 'DAILY' | 'MEDIUM' | 'HARD');
+  return startAddSubtask(ctx, goalId, type);
 }
 
-export async function handleSubtaskToggle(ctx: any, subtaskId: number) {
+export async function handleSubtaskToggle(ctx: Context, subtaskId: number) {
   try {
     const result = await toggleSubtask(subtaskId);
     await ctx.answerCallbackQuery('✅ Выполнено!');
     return showGoal(ctx, result.goalId);
-  } catch (err: any) {
-    return ctx.answerCallbackQuery(err.message || 'Ошибка');
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Ошибка';
+    return ctx.answerCallbackQuery(message);
   }
 }

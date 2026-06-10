@@ -1,14 +1,14 @@
 import 'dotenv/config';
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is required in .env`);
+  }
+  return value;
+}
+
 export const config = {
-  botToken: process.env.BOT_TOKEN!,
-  databaseUrl: process.env.DATABASE_URL!,
-};
-
-if (!config.botToken) {
-  throw new Error('BOT_TOKEN is required in .env');
-}
-
-if (!config.databaseUrl) {
-  throw new Error('DATABASE_URL is required in .env');
-}
+  botToken: requireEnv('BOT_TOKEN'),
+  databaseUrl: requireEnv('DATABASE_URL'),
+} as const;

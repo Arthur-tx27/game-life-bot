@@ -1,8 +1,8 @@
-import { InlineKeyboard } from 'grammy';
+import { Context, InlineKeyboard } from 'grammy';
 import { getUserGoals } from '../../services/goal';
 import { findOrCreateUser } from '../../services/user';
 
-export async function showGoalsList(ctx: any) {
+export async function showGoalsList(ctx: Context) {
   if (!ctx.from) return;
 
   const user = await findOrCreateUser(

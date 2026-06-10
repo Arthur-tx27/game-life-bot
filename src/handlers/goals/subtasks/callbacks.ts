@@ -1,9 +1,9 @@
-import { InlineKeyboard } from 'grammy';
+import { Context, InlineKeyboard } from 'grammy';
 import { showGoal } from '../view';
 import { toggleSubtask } from '../../../services/goal';
 import { startAddSubtask } from './add';
 
-export async function showSubtaskTypePicker(ctx: any, goalId: number) {
+export async function showSubtaskTypePicker(ctx: Context, goalId: number) {
   await ctx.answerCallbackQuery();
   const keyboard = new InlineKeyboard()
     .text('🔄 Ежедневная', `subtask_type:${goalId}:DAILY`)
@@ -16,11 +16,7 @@ export async function showSubtaskTypePicker(ctx: any, goalId: number) {
   });
 }
 
-export async function handleSubtaskType(
-  ctx: any,
-  goalId: number,
-  type: string,
-) {
+export async function handleSubtaskType(ctx: Context, goalId: number, type: string) {
   if (!['DAILY', 'MEDIUM', 'HARD'].includes(type)) {
     return ctx.answerCallbackQuery('Неизвестный тип задачи');
   }
@@ -29,12 +25,13 @@ export async function handleSubtaskType(
   return startAddSubtask(ctx, goalId, type as 'DAILY' | 'MEDIUM' | 'HARD');
 }
 
-export async function handleSubtaskToggle(ctx: any, subtaskId: number) {
+export async function handleSubtaskToggle(ctx: Context, subtaskId: number) {
   try {
     const result = await toggleSubtask(subtaskId);
     await ctx.answerCallbackQuery('✅ Выполнено!');
     return showGoal(ctx, result.goalId);
-  } catch (err: any) {
-    return ctx.answerCallbackQuery(err.message || 'Ошибка');
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Ошибка';
+    return ctx.answerCallbackQuery(message);
   }
 }

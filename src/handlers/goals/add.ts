@@ -1,11 +1,12 @@
+import { Context } from 'grammy';
 import { bot } from '../../bot';
 import { findOrCreateUser } from '../../services/user';
 import { createGoal } from '../../services/goal';
 import { formatNumber } from '../../lib/format';
 import { startDialog, DialogState } from '../../lib/dialogs';
 
-export async function startAddGoal(ctx: any) {
-  if (!ctx.from) return;
+export async function startAddGoal(ctx: Context) {
+  if (!ctx.from || !ctx.chat) return;
 
   const user = await findOrCreateUser(
     ctx.from.id,
@@ -40,9 +41,10 @@ export async function startAddGoal(ctx: any) {
       },
     },
     {
-      prompt: 'Сколько опыта нужно набрать для завершения цели? (число):\n *Легкая ~5000 XP*\n*Средняя ~10000 XP*\n*Сложная ~20000 XP*',
+      prompt:
+        'Сколько опыта нужно набрать для завершения цели? (число):\n *Легкая ~5000 XP*\n*Средняя ~10000 XP*\n*Сложная ~20000 XP*',
       handler: async (_chatId, text) => {
-        const xp = parseInt(text.trim().replaceAll(" ", ""), 10);
+        const xp = parseInt(text.trim().replaceAll(' ', ''), 10);
         if (isNaN(xp) || xp <= 0) {
           bot.api.sendMessage(_chatId, 'Введите положительное число');
           return 'retry';
@@ -62,7 +64,7 @@ export async function startAddGoal(ctx: any) {
   };
 
   await ctx.reply('🔧 **Создание новой цели**', { parse_mode: 'Markdown' });
-  startDialog(ctx.chat!.id, state);
+  startDialog(ctx.chat.id, state);
 }
 
 async function saveGoal(chatId: number, data: Record<string, unknown>): Promise<void> {

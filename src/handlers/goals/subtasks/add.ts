@@ -1,3 +1,4 @@
+import { Context } from 'grammy';
 import { bot } from '../../../bot';
 import { createSubtask } from '../../../services/goal';
 import { formatNumber } from '../../../lib/format';
@@ -11,7 +12,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export async function startAddSubtask(
-  ctx: any,
+  ctx: Context,
   goalId: number,
   type: 'DAILY' | 'MEDIUM' | 'HARD',
 ) {
@@ -41,7 +42,7 @@ export async function startAddSubtask(
     {
       prompt: 'Введите кол-во XP за выполнение:',
       handler: async (_chatId, text) => {
-        const xp = parseInt(text.trim().replaceAll(" ", ""), 10);
+        const xp = parseInt(text.trim().replaceAll(' ', ''), 10);
         if (isNaN(xp) || xp <= 0) {
           bot.api.sendMessage(_chatId, 'Введите положительное целое число');
           return 'retry';
@@ -66,10 +67,7 @@ export async function startAddSubtask(
   startDialog(ctx.chat.id, state);
 }
 
-async function saveSubtask(
-  chatId: number,
-  data: Record<string, unknown>,
-): Promise<void> {
+async function saveSubtask(chatId: number, data: Record<string, unknown>): Promise<void> {
   const goalId = data.goalId as number;
   const type = data.type as 'DAILY' | 'MEDIUM' | 'HARD';
 

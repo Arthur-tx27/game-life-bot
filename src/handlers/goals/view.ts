@@ -1,4 +1,4 @@
-import { InlineKeyboard } from 'grammy';
+import { Context, InlineKeyboard } from 'grammy';
 import { findGoal } from '../../services/goal';
 import { formatNumber, formatGoalProgress, GOAL_XP_LINE_INDENT } from '../../lib/format';
 import { getDailyCooldownRemaining } from '../../lib/cooldown';
@@ -13,10 +13,8 @@ export async function renderGoalView(goalId: number) {
   const goal = await findGoal(goalId);
   if (!goal) return null;
 
-  const subtasks = (goal as any).subtasks as any[];
-
   const TYPE_ORDER: Record<string, number> = { DAILY: 0, MEDIUM: 1, HARD: 2 };
-  subtasks.sort((a: any, b: any) => {
+  const subtasks = [...goal.subtasks].sort((a, b) => {
     const typeDiff = (TYPE_ORDER[a.type] ?? 99) - (TYPE_ORDER[b.type] ?? 99);
     if (typeDiff !== 0) return typeDiff;
     return a.id - b.id;
@@ -56,7 +54,7 @@ export async function renderGoalView(goalId: number) {
   return { text, keyboard };
 }
 
-export async function showGoal(ctx: any, goalId: number) {
+export async function showGoal(ctx: Context, goalId: number) {
   if (!ctx.from) return;
 
   const view = await renderGoalView(goalId);

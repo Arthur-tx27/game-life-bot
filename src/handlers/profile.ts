@@ -1,11 +1,12 @@
+import { Context } from 'grammy';
 import { findOrCreateUser } from '../services/user';
 import { getUserGoals } from '../services/goal';
 import { getProfileCard, buildProfileCaption } from '../services/profile';
 import { formatGoalProgress, GOAL_XP_LINE_INDENT } from '../lib/format';
 import { mainMenuKeyboard } from './menu';
 
-export async function showProfile(ctx: any) {
-  if (!ctx.from) return;
+export async function showProfile(ctx: Context) {
+  if (!ctx.from || !ctx.chat) return;
 
   const user = await findOrCreateUser(
     ctx.from.id,
@@ -44,8 +45,8 @@ export async function showProfile(ctx: any) {
   });
 
   await ctx.api
-  .pinChatMessage(ctx.chat.id, msg.message_id, {
-    disable_notification: true,
-  })
-  .catch(() => {});
+    .pinChatMessage(ctx.chat.id, msg.message_id, {
+      disable_notification: true,
+    })
+    .catch(() => {});
 }

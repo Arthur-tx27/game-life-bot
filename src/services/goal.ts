@@ -1,3 +1,4 @@
+import { Prisma, SUBTASK_TYPE } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { getDailyCooldownRemaining } from '../lib/cooldown';
 
@@ -35,35 +36,39 @@ export async function createGoal(data: {
   });
 }
 
-export async function addXpToGoal(goalId: number, xp: number) {
-  const goal = await prisma.goal.update({
+/**
+ * Начисляет XP цели и пользователю внутри транзакции.
+ * При достижении порога закрывает цель и удаляет невыполненные подзадачи.
+ */
+async function applyXp(
+  transaction: Prisma.TransactionClient,
+  goalId: number,
+  userId: number,
+  xp: number,
+): Promise<void> {
+  let goal = await transaction.goal.update({
     where: { id: goalId },
     data: { currentXp: { increment: xp } },
   });
 
   if (goal.currentXp < 0) {
-    await prisma.goal.update({
+    goal = await transaction.goal.update({
       where: { id: goalId },
       data: { currentXp: 0 },
     });
-    goal.currentXp = 0;
   }
 
   if (goal.currentXp >= goal.requiredXp && !goal.isCompleted) {
-    await prisma.goal.update({
+    await transaction.goal.update({
       where: { id: goalId },
       data: { isCompleted: true },
     });
-    await prisma.subtask.deleteMany({
+    await transaction.subtask.deleteMany({
       where: { goalId, isCompleted: false },
     });
   }
 
-  return goal;
-}
-
-export async function addXpToUser(userId: number, xp: number) {
-  return prisma.user.update({
+  await transaction.user.update({
     where: { id: userId },
     data: { totalXp: { increment: xp } },
   });
@@ -72,7 +77,7 @@ export async function addXpToUser(userId: number, xp: number) {
 export async function createSubtask(data: {
   goalId: number;
   title: string;
-  type: 'DAILY' | 'MEDIUM' | 'HARD';
+  type: SUBTASK_TYPE;
   xpReward: number;
 }) {
   const goal = await prisma.goal.findUnique({ where: { id: data.goalId } });
@@ -101,27 +106,24 @@ export async function toggleSubtask(subtaskId: number): Promise<ToggleSubtaskRes
       throw new Error(`Кулдаун: ${remaining}`);
     }
 
-    await prisma.subtask.update({
-      where: { id: subtaskId },
-      data: { completedAt: new Date() },
+    await prisma.$transaction(async (transaction) => {
+      await transaction.subtask.update({
+        where: { id: subtaskId },
+        data: { completedAt: new Date() },
+      });
+      await applyXp(transaction, subtask.goalId, subtask.goal.userId, subtask.xpReward);
     });
-
-    await addXpToGoal(subtask.goalId, subtask.xpReward);
-    await addXpToUser(subtask.goal.userId, subtask.xpReward);
   } else {
     const newCompleted = !subtask.isCompleted;
-    await prisma.subtask.update({
-      where: { id: subtaskId },
-      data: { isCompleted: newCompleted },
-    });
+    const xpDelta = newCompleted ? subtask.xpReward : -subtask.xpReward;
 
-    if (newCompleted) {
-      await addXpToGoal(subtask.goalId, subtask.xpReward);
-      await addXpToUser(subtask.goal.userId, subtask.xpReward);
-    } else {
-      await addXpToGoal(subtask.goalId, -subtask.xpReward);
-      await addXpToUser(subtask.goal.userId, -subtask.xpReward);
-    }
+    await prisma.$transaction(async (transaction) => {
+      await transaction.subtask.update({
+        where: { id: subtaskId },
+        data: { isCompleted: newCompleted },
+      });
+      await applyXp(transaction, subtask.goalId, subtask.goal.userId, xpDelta);
+    });
   }
 
   return { goalId: subtask.goalId };

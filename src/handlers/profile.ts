@@ -1,11 +1,55 @@
+import { Context } from 'grammy';
+import { Goal } from '@prisma/client';
 import { findOrCreateUser } from '../services/user';
 import { getUserGoals } from '../services/goal';
-import { getProfileCard, buildProfileCaption } from '../services/profile';
+import { getProfileCard, buildProfileCaption, ProfileCard } from '../services/profile';
 import { formatGoalProgress, GOAL_XP_LINE_INDENT } from '../lib/format';
 import { mainMenuKeyboard } from './menu';
 
-export async function showProfile(ctx: any) {
-  if (!ctx.from) return;
+/** Отправляет карточку профиля и закрепляет её в чате */
+export async function sendPinnedProfileCard(
+  ctx: Context,
+  card: ProfileCard,
+  extra?: string,
+): Promise<void> {
+  if (!ctx.chat) return;
+
+  const caption = buildProfileCaption(card, extra);
+
+  const msg = await ctx.replyWithPhoto(card.avatar, {
+    caption,
+    parse_mode: 'Markdown',
+    reply_markup: mainMenuKeyboard,
+  });
+
+  await ctx.api
+    .pinChatMessage(ctx.chat.id, msg.message_id, {
+      disable_notification: true,
+    })
+    .catch(() => {});
+}
+
+function buildGoalsSummary(goals: Goal[]): string {
+  if (goals.length === 0) {
+    return '\n\n📋 Целей пока нет.';
+  }
+
+  const activeLines = goals
+    .filter((goal) => !goal.isCompleted)
+    .map(
+      (goal) => `
+🎯 ${goal.title}
+${GOAL_XP_LINE_INDENT}${formatGoalProgress(goal.currentXp, goal.requiredXp)}`,
+    );
+  const doneLines = goals
+    .filter((goal) => goal.isCompleted)
+    .map((goal) => `\n✅ ${goal.title}`);
+
+  return `\n\n📋 **Цели**:${activeLines.join('')}${doneLines.join('')}`;
+}
+
+export async function showProfile(ctx: Context) {
+  if (!ctx.from || !ctx.chat) return;
 
   const user = await findOrCreateUser(
     ctx.from.id,
@@ -14,32 +58,7 @@ export async function showProfile(ctx: any) {
   );
 
   const card = getProfileCard(user.totalXp, user.firstName);
-
   const goals = await getUserGoals(user.id);
 
-  let extra: string;
-  if (goals.length === 0) {
-    extra = '\n\n📋 Целей пока нет.';
-  } else {
-    const activeGoals = goals.filter((g) => !g.isCompleted);
-    const doneGoals = goals.filter((g) => g.isCompleted);
-
-    const activeLines = activeGoals.map((g) => {
-      return (
-        `\n🎯 ${g.title}\n` +
-        GOAL_XP_LINE_INDENT +
-        `${formatGoalProgress(g.currentXp, g.requiredXp)}`
-      );
-    });
-    const doneLines = doneGoals.map((g) => `\n✅ ${g.title}`);
-    extra = '\n\n📋 **Цели**:' + activeLines.join('') + doneLines.join('');
-  }
-
-  const caption = buildProfileCaption(card, extra);
-
-  await ctx.replyWithPhoto(card.avatar, {
-    caption,
-    parse_mode: 'Markdown',
-    reply_markup: mainMenuKeyboard,
-  });
+  await sendPinnedProfileCard(ctx, card, buildGoalsSummary(goals));
 }

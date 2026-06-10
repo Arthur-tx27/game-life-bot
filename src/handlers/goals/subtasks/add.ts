@@ -1,4 +1,5 @@
 import { Context } from 'grammy';
+import { SUBTASK_TYPE } from '@prisma/client';
 import { bot } from '../../../bot';
 import { createSubtask } from '../../../services/goal';
 import { formatNumber } from '../../../lib/format';
@@ -6,7 +7,7 @@ import { parsePositiveInt } from '../../../lib/parse';
 import { startDialog, DialogStep } from '../../../lib/dialogs';
 import { renderGoalView } from '../view';
 
-const TYPE_LABELS: Record<string, string> = {
+const TYPE_LABELS: Record<SUBTASK_TYPE, string> = {
   DAILY: 'ежедневную',
   MEDIUM: 'среднюю',
   HARD: 'сложную',
@@ -14,19 +15,15 @@ const TYPE_LABELS: Record<string, string> = {
 
 interface SubtaskDraft {
   goalId: number;
-  type: 'DAILY' | 'MEDIUM' | 'HARD';
+  type: SUBTASK_TYPE;
   title: string;
   xpReward: number;
 }
 
-export async function startAddSubtask(
-  ctx: Context,
-  goalId: number,
-  type: 'DAILY' | 'MEDIUM' | 'HARD',
-) {
+export async function startAddSubtask(ctx: Context, goalId: number, type: SUBTASK_TYPE) {
   if (!ctx.from || !ctx.chat) return;
 
-  const typeLabel = TYPE_LABELS[type] || type;
+  const typeLabel = TYPE_LABELS[type];
 
   const draft: SubtaskDraft = {
     goalId,

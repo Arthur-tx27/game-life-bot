@@ -1,3 +1,4 @@
+import { SUBTASK_TYPE } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { getDailyCooldownRemaining } from '../lib/cooldown';
 
@@ -72,7 +73,7 @@ export async function addXpToUser(userId: number, xp: number) {
 export async function createSubtask(data: {
   goalId: number;
   title: string;
-  type: 'DAILY' | 'MEDIUM' | 'HARD';
+  type: SUBTASK_TYPE;
   xpReward: number;
 }) {
   const goal = await prisma.goal.findUnique({ where: { id: data.goalId } });

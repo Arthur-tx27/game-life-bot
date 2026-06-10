@@ -1,7 +1,12 @@
 import { Context, InlineKeyboard } from 'grammy';
+import { SUBTASK_TYPE } from '@prisma/client';
 import { showGoal } from '../view';
 import { toggleSubtask } from '../../../services/goal';
 import { startAddSubtask } from './add';
+
+function isSubtaskType(value: string): value is SUBTASK_TYPE {
+  return value in SUBTASK_TYPE;
+}
 
 export async function showSubtaskTypePicker(ctx: Context, goalId: number) {
   await ctx.answerCallbackQuery();
@@ -17,12 +22,12 @@ export async function showSubtaskTypePicker(ctx: Context, goalId: number) {
 }
 
 export async function handleSubtaskType(ctx: Context, goalId: number, type: string) {
-  if (!['DAILY', 'MEDIUM', 'HARD'].includes(type)) {
+  if (!isSubtaskType(type)) {
     return ctx.answerCallbackQuery('Неизвестный тип задачи');
   }
   await ctx.answerCallbackQuery();
   await ctx.deleteMessage().catch(() => {});
-  return startAddSubtask(ctx, goalId, type as 'DAILY' | 'MEDIUM' | 'HARD');
+  return startAddSubtask(ctx, goalId, type);
 }
 
 export async function handleSubtaskToggle(ctx: Context, subtaskId: number) {

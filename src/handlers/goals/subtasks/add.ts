@@ -2,7 +2,8 @@ import { Context } from 'grammy';
 import { bot } from '../../../bot';
 import { createSubtask } from '../../../services/goal';
 import { formatNumber } from '../../../lib/format';
-import { startDialog, DialogState } from '../../../lib/dialogs';
+import { parsePositiveInt } from '../../../lib/parse';
+import { startDialog, DialogStep } from '../../../lib/dialogs';
 import { renderGoalView } from '../view';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -10,6 +11,13 @@ const TYPE_LABELS: Record<string, string> = {
   MEDIUM: 'среднюю',
   HARD: 'сложную',
 };
+
+interface SubtaskDraft {
+  goalId: number;
+  type: 'DAILY' | 'MEDIUM' | 'HARD';
+  title: string;
+  xpReward: number;
+}
 
 export async function startAddSubtask(
   ctx: Context,
@@ -20,62 +28,52 @@ export async function startAddSubtask(
 
   const typeLabel = TYPE_LABELS[type] || type;
 
-  const data: Record<string, unknown> = {
+  const draft: SubtaskDraft = {
     goalId,
     type,
     title: '',
     xpReward: 0,
   };
 
-  const steps: DialogState['steps'] = [
+  const steps: DialogStep[] = [
     {
       prompt: 'Введите название задачи:',
-      handler: (_chatId, text) => {
+      handler: async (chatId, text) => {
         if (!text.trim()) {
-          bot.api.sendMessage(_chatId, 'Название не может быть пустым');
+          await bot.api.sendMessage(chatId, 'Название не может быть пустым');
           return 'retry';
         }
-        data.title = text.trim();
+        draft.title = text.trim();
         return 'next';
       },
     },
     {
       prompt: 'Введите кол-во XP за выполнение:',
-      handler: async (_chatId, text) => {
-        const xp = parseInt(text.trim().replaceAll(' ', ''), 10);
-        if (isNaN(xp) || xp <= 0) {
-          bot.api.sendMessage(_chatId, 'Введите положительное целое число');
+      handler: async (chatId, text) => {
+        const xp = parsePositiveInt(text);
+        if (xp === null) {
+          await bot.api.sendMessage(chatId, 'Введите положительное целое число');
           return 'retry';
         }
-        data.xpReward = xp;
-        await saveSubtask(_chatId, data);
+        draft.xpReward = xp;
+        await saveSubtask(chatId, draft);
         return 'done';
       },
     },
   ];
 
-  const state: DialogState = {
-    userId: ctx.from.id,
-    step: 0,
-    data,
-    steps,
-  };
-
   await ctx.reply(`🔧 **Создание задачи** (${typeLabel})`, {
     parse_mode: 'Markdown',
   });
-  startDialog(ctx.chat.id, state);
+  await startDialog(ctx.chat.id, steps);
 }
 
-async function saveSubtask(chatId: number, data: Record<string, unknown>): Promise<void> {
-  const goalId = data.goalId as number;
-  const type = data.type as 'DAILY' | 'MEDIUM' | 'HARD';
-
+async function saveSubtask(chatId: number, draft: SubtaskDraft): Promise<void> {
   const subtask = await createSubtask({
-    goalId,
-    title: data.title as string,
-    type,
-    xpReward: data.xpReward as number,
+    goalId: draft.goalId,
+    title: draft.title,
+    type: draft.type,
+    xpReward: draft.xpReward,
   });
 
   await bot.api.sendMessage(
@@ -84,7 +82,7 @@ async function saveSubtask(chatId: number, data: Record<string, unknown>): Promi
       `⭐ Награда: +${formatNumber(subtask.xpReward)} XP`,
   );
 
-  const view = await renderGoalView(goalId);
+  const view = await renderGoalView(draft.goalId);
   if (view) {
     await bot.api.sendMessage(chatId, view.text, {
       reply_markup: view.keyboard,

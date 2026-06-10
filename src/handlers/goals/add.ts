@@ -3,7 +3,15 @@ import { bot } from '../../bot';
 import { findOrCreateUser } from '../../services/user';
 import { createGoal } from '../../services/goal';
 import { formatNumber } from '../../lib/format';
-import { startDialog, DialogState } from '../../lib/dialogs';
+import { parsePositiveInt } from '../../lib/parse';
+import { startDialog, DialogStep } from '../../lib/dialogs';
+
+interface GoalDraft {
+  userId: number;
+  title: string;
+  description: string | null;
+  requiredXp: number;
+}
 
 export async function startAddGoal(ctx: Context) {
   if (!ctx.from || !ctx.chat) return;
@@ -14,65 +22,58 @@ export async function startAddGoal(ctx: Context) {
     ctx.from.first_name,
   );
 
-  const data: Record<string, unknown> = {
+  const draft: GoalDraft = {
     userId: user.id,
     title: '',
-    description: null as string | null,
+    description: null,
     requiredXp: 0,
   };
 
-  const steps: DialogState['steps'] = [
+  const steps: DialogStep[] = [
     {
       prompt: 'Введите название цели:',
-      handler: (_chatId, text) => {
+      handler: async (chatId, text) => {
         if (!text.trim()) {
-          bot.api.sendMessage(_chatId, 'Название не может быть пустым');
+          await bot.api.sendMessage(chatId, 'Название не может быть пустым');
           return 'retry';
         }
-        data.title = text.trim();
+        draft.title = text.trim();
         return 'next';
       },
     },
     {
       prompt: 'Введите описание цели (или отправьте "-", чтобы пропустить):',
       handler: (_chatId, text) => {
-        data.description = text.trim() === '-' ? null : text.trim();
+        draft.description = text.trim() === '-' ? null : text.trim();
         return 'next';
       },
     },
     {
       prompt:
         'Сколько опыта нужно набрать для завершения цели? (число):\n *Легкая ~5000 XP*\n*Средняя ~10000 XP*\n*Сложная ~20000 XP*',
-      handler: async (_chatId, text) => {
-        const xp = parseInt(text.trim().replaceAll(' ', ''), 10);
-        if (isNaN(xp) || xp <= 0) {
-          bot.api.sendMessage(_chatId, 'Введите положительное число');
+      handler: async (chatId, text) => {
+        const xp = parsePositiveInt(text);
+        if (xp === null) {
+          await bot.api.sendMessage(chatId, 'Введите положительное число');
           return 'retry';
         }
-        data.requiredXp = xp;
-        await saveGoal(_chatId, data);
+        draft.requiredXp = xp;
+        await saveGoal(chatId, draft);
         return 'done';
       },
     },
   ];
 
-  const state: DialogState = {
-    userId: ctx.from.id,
-    step: 0,
-    data,
-    steps,
-  };
-
   await ctx.reply('🔧 **Создание новой цели**', { parse_mode: 'Markdown' });
-  startDialog(ctx.chat.id, state);
+  await startDialog(ctx.chat.id, steps);
 }
 
-async function saveGoal(chatId: number, data: Record<string, unknown>): Promise<void> {
+async function saveGoal(chatId: number, draft: GoalDraft): Promise<void> {
   const goal = await createGoal({
-    userId: data.userId as number,
-    title: data.title as string,
-    description: (data.description as string) ?? '',
-    requiredXp: data.requiredXp as number,
+    userId: draft.userId,
+    title: draft.title,
+    description: draft.description ?? '',
+    requiredXp: draft.requiredXp,
   });
 
   await bot.api.sendMessage(

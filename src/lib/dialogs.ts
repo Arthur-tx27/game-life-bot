@@ -7,18 +7,17 @@ export interface DialogStep {
   handler: (chatId: number, text: string) => StepResult | Promise<StepResult>;
 }
 
-export interface DialogState {
-  userId: number;
+interface DialogState {
   step: number;
-  data: Record<string, unknown>;
   steps: DialogStep[];
 }
 
 const dialogs = new Map<number, DialogState>();
 
-export function startDialog(chatId: number, state: DialogState): void {
+export async function startDialog(chatId: number, steps: DialogStep[]): Promise<void> {
+  const state: DialogState = { step: 0, steps };
   dialogs.set(chatId, state);
-  sendPrompt(chatId, state);
+  await sendPrompt(chatId, state);
 }
 
 export function cancelDialog(chatId: number): void {
@@ -29,10 +28,7 @@ export function isInDialog(chatId: number): boolean {
   return dialogs.has(chatId);
 }
 
-export async function handleDialogInput(
-  chatId: number,
-  text: string,
-): Promise<boolean> {
+export async function handleDialogInput(chatId: number, text: string): Promise<boolean> {
   const state = dialogs.get(chatId);
   if (!state) return false;
 
@@ -51,11 +47,11 @@ export async function handleDialogInput(
         dialogs.delete(chatId);
         return true;
       }
-      sendPrompt(chatId, state);
+      await sendPrompt(chatId, state);
       return true;
 
     case 'retry':
-      sendPrompt(chatId, state);
+      await sendPrompt(chatId, state);
       return true;
 
     case 'done':
@@ -64,9 +60,9 @@ export async function handleDialogInput(
   }
 }
 
-function sendPrompt(chatId: number, state: DialogState): void {
+async function sendPrompt(chatId: number, state: DialogState): Promise<void> {
   const currentStep = state.steps[state.step];
   if (currentStep) {
-    bot.api.sendMessage(chatId, currentStep.prompt);
+    await bot.api.sendMessage(chatId, currentStep.prompt);
   }
 }
